@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A Southeast Asia haze outlook and decision dashboard built on Google Maps Platform." />
+    <title>HazeWatch SEA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="HazeWatch SEA home">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span>HazeWatch <b>SEA</b></span>
+        </a>
+        <button class="info-btn" id="infoBtn" aria-label="Show regional information" aria-expanded="false" aria-controls="sidebar" title="Regional information (R)">i</button>
+        <div class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" type="search" placeholder="Search city or country" aria-label="Search city or country" autocomplete="off" />
+          <kbd>⌘ K</kbd>
+          <div id="searchResults" class="search-results" hidden></div>
+        </div>
+        <div class="top-actions">
+          <span class="live-pill demo" id="livePill"><i></i> <span>Offline demo</span></span>
+          <button class="ai-btn" id="aiBtn" title="Ask HazeWatch AI (/)"><i>✦</i> <span>Ask AI</span></button>
+          <button class="tour-btn" id="tourBtn" title="Guided demo tour (T)"><i>▶</i> <span>Demo tour</span></button>
+          <button class="icon-btn" id="notifyBtn" aria-label="Notifications">●<span class="notify-dot"></span></button>
+        </div>
+      </header>
+
+      <main>
+        <aside class="sidebar" id="sidebar" aria-label="Regional information">
+          <button class="sidebar-close" id="sidebarClose" aria-label="Close regional information">×</button>
+          <div class="region-heading">
+            <div>
+              <h1 id="regionName">Asia-Pacific</h1>
+              <p id="updatedAt">Updated 14 Oct · 20:45</p>
+            </div>
+            <button class="more-btn" aria-label="More options">•••</button>
+          </div>
+
+          <div class="country-filter">
+            <button class="country-btn" id="countryBtn" aria-haspopup="true" aria-expanded="false" title="Filter by country (C)"><span class="cf-icon">⚑</span><span id="countrySummary">All countries</span><i>▾</i></button>
+            <div class="country-menu" id="countryMenu" hidden></div>
+            <div class="country-chips" id="countryChips"></div>
+          </div>
+
+          <section class="status-card">
+            <div class="status-top"><span class="status-icon">≋</span><span>REGIONAL STATUS</span><strong id="statusBadge">Elevated</strong></div>
+            <h2>Transboundary haze<br />risk is increasing</h2>
+            <p id="statusText">Hotspots in Sumatra and Kalimantan, plus south-westerly winds, may carry smoke toward Peninsular Malaysia and Singapore over the next 48 hours.</p>
+            <div class="confidence"><span>Forecast confidence</span><b>78% <i><em style="width:78%"></em></i></b></div>
+          </section>
+
+          <div class="section-label"><span>LOCATIONS TO WATCH</span><button id="viewAllBtn">View all</button></div>
+          <div id="watchList" class="watch-list"></div>
+
+          <section class="alert-card" id="healthCard">
+            <div class="alert-icon">!</div>
+            <div><b id="healthTitle">Health advisory</b><p id="healthText">Sensitive groups in Singapore should reduce prolonged outdoor activity from 18:00.</p></div>
+            <button id="healthDismiss" aria-label="Dismiss health advisory">×</button>
+          </section>
+
+        </aside>
+
+        <section class="map-stage layer-aqi view-2d" id="mapStage" aria-label="Southeast Asia haze map">
+          <div id="googleMap" class="google-map"></div>
+          <div id="demoMap" class="demo-map" data-zoom="100%" title="Drag to pan · scroll or double-click to zoom">
+            <svg id="demoSvg" class="demo-svg" aria-hidden="true"></svg>
+            <div id="demoHaze"></div>
+            <div id="demoFires"></div>
+            <div id="demoMarkers"></div>
+          </div>
+          <canvas id="windCanvas" class="wind-canvas" aria-hidden="true"></canvas>
+
+          <div class="view-switch" id="viewSwitch" role="group" aria-label="Map view" title="Cycle views (V)">
+            <button data-view="2d" class="active">2D</button><button data-view="3d">3D</button><button data-view="satellite">Satellite</button>
+          </div>
+
+          <div class="map-toolbar">
+            <button class="tool active" data-layer="aqi" title="AQI heatmap (1)"><i class="dot gradient"></i>AQI</button>
+            <button class="tool" data-layer="pm25" title="PM2.5 heatmap (2)"><i class="dot violet"></i>PM₂.₅</button>
+            <button class="tool active" data-layer="wind" title="Wind flow (W)"><i>↝</i> Wind</button>
+            <button class="tool active" data-layer="fires" title="Fire hotspots (F)"><i>♨</i> Hotspots</button>
+            <span></span>
+            <button class="tool plain" id="legendBtn">Legend ⓘ</button>
+          </div>
+
+          <div class="env-notice" id="envNotice" hidden><b>Offline map</b><span></span><button aria-label="Dismiss">×</button></div>
+          <section class="ai-panel" id="aiPanel" hidden aria-label="HazeWatch AI chat">
+            <header><span class="ai-mark">✦</span><div><b>HazeWatch AI</b><small id="aiModel">Gemini · live air-quality data</small></div><button id="aiClear" title="Clear chat and zones">Clear</button><button id="aiClose" aria-label="Close AI chat">×</button></header>
+            <ol class="ai-messages" id="aiMessages">
+              <li class="ai-msg model intro">Ask me about the haze. I'll explain which areas are serious and outline them on the map.</li>
+            </ol>
+            <div class="ai-suggest" id="aiSuggest">
+              <button>Which areas are serious right now?</button>
+              <button>Where will haze be worst in 24 hours?</button>
+              <button>Is it safe to jog in Singapore tonight?</button>
+            </div>
+            <form class="ai-form" id="aiForm"><input id="aiInput" type="text" placeholder="Ask about the haze…" autocomplete="off" maxlength="600" /><button type="submit" aria-label="Send">➤</button></form>
+          </section>
+
+          <div class="tour-caption" id="tourCaption" hidden><span id="tourStep"></span><b id="tourText"></b></div>
+
+          <aside class="api-panel" id="apiPanel" hidden aria-label="API request inspector">
+            <header><b>API inspector</b><span id="apiCount">0 calls</span><button id="apiClose" aria-label="Close API inspector">×</button></header>
+            <ol id="apiLog"><li class="empty">Connect Google Maps to watch live Maps Platform requests.</li></ol>
+          </aside>
+
+          <div class="map-controls">
+            <button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button>
+            <button id="locateBtn" aria-label="Use my location">⌖</button>
+            <button id="fitBtn" aria-label="Show all locations" title="Show all locations (A)">⤢</button>
+          </div>
+
+          <div class="legend" id="legend">
+            <b class="legend-title" id="legendTitle">US AQI</b>
+            <div id="legendTicks"><span>0</span><span>50</span><span>100</span><span>150</span><span>200+</span></div>
+            <i></i>
+            <div class="legend-cats"><small>Good</small><small>Moderate</small><small>Unhealthy</small><small>Very unhealthy</small></div>
+            <small class="legend-note" id="legendNote">Demo haze field · illustrative</small>
+          </div>
+
+          <div class="timeline-panel">
+            <div class="timeline-head">
+              <div><button class="play-btn" id="playBtn" aria-label="Play forecast" title="Play forecast (Space)">▶</button><div><b id="forecastTime">Now · 20:45</b><small id="forecastDate">Wednesday, 14 October</small></div></div>
+              <span>FORECAST</span>
+              <div class="step-tabs" id="stepTabs"><button class="active" data-hour="0">Now</button><button data-hour="12">+12h</button><button data-hour="24">+24h</button><button data-hour="48">+48h</button></div>
+            </div>
+            <div class="timeline-track" id="timelineTrack"><i></i><button aria-label="Forecast time handle"></button></div>
+            <div class="timeline-labels" id="timelineLabels"><span>Wed 14</span><span>Thu 15</span><span>Fri 16</span><span>Sat 17</span></div>
+          </div>
+
+          <article class="detail-card" id="detailCard">
+            <button class="close-detail" id="closeDetail" aria-label="Close details">×</button>
+            <div class="detail-title"><div><span id="detailFlag">🇸🇬</span><div><h3 id="detailName">Singapore</h3><p id="detailMeta">Central Region</p></div></div><span class="trend" id="detailTrend">↗ 14%</span></div>
+            <div class="aqi-reading"><strong id="detailAqi">112</strong><div><b>US AQI</b><span id="detailLevel">Unhealthy for sensitive groups</span></div></div>
+            <div class="metric-row"><div><span>PM₂.₅</span><b id="detailPm">40.2 <small>µg/m³</small></b></div><div><span>Wind</span><b id="detailWind">SW 12 <small>km/h</small></b></div></div>
+            <div class="mini-forecast" id="miniForecast"></div>
+            <div class="mini-axis"><span>Now</span><span>+24h</span><span>+44h</span></div>
+            <p class="detail-source" id="detailSource">Demo data · illustrative only</p>
+            <button class="detail-action" id="alertBtn">Set alert for this location</button>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="config.js" onerror="void 0"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
